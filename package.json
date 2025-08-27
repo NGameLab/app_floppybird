@@ -1,0 +1,23 @@
+{
+  "name": "floppybird-n-platform",
+  "version": "1.0.0",
+  "description": "Floppy Bird game integrated with N Platform OAuth",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "keywords": [
+    "floppybird",
+    "game",
+    "oauth",
+    "n-platform"
+  ],
+  "author": "N Platform",
+  "license": "MIT"
+}
