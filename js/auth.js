@@ -306,6 +306,112 @@ export class NPlatformAuth {
         }
     }
 
+    // 开始游戏会话
+    async startGameSession() {
+        try {
+            // 开发模式下跳过API调用
+            if (this.devMode) {
+                console.log('开发模式：跳过游戏开始API调用');
+                const mockOperationId = `dev_${Date.now()}`;
+                localStorage.setItem('floppy_bird_operation_id', mockOperationId);
+                return mockOperationId;
+            }
+
+            if (!this.accessToken) {
+                throw new Error('未登录，无法开始游戏');
+            }
+
+            const response = await fetch(`${this.apiBase}/oapi/game/start`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    external_id: `floppy_bird_${Date.now()}`,
+                    remark: 'Floppy Bird game started'
+                }),
+                mode: 'cors',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`开始游戏失败: ${response.status} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log('游戏开始响应:', result);
+            
+            if (result.code === 0 && result.data) {
+                // 保存operation_id到本地存储
+                localStorage.setItem('floppy_bird_operation_id', result.data.operation_id);
+                console.log('游戏会话已开始，operation_id:', result.data.operation_id);
+                return result.data.operation_id;
+            } else {
+                throw new Error(result.msg || '开始游戏失败');
+            }
+        } catch (error) {
+            console.error('开始游戏会话失败:', error);
+            throw error;
+        }
+    }
+
+    // 结束游戏会话
+    async endGameSession() {
+        try {
+            // 开发模式下跳过API调用
+            if (this.devMode) {
+                console.log('开发模式：跳过游戏结束API调用');
+                localStorage.removeItem('floppy_bird_operation_id');
+                return;
+            }
+
+            if (!this.accessToken) {
+                throw new Error('未登录，无法结束游戏');
+            }
+
+            const operationId = localStorage.getItem('floppy_bird_operation_id');
+            if (!operationId) {
+                console.warn('未找到游戏会话ID，跳过结束游戏调用');
+                return;
+            }
+
+            const response = await fetch(`${this.apiBase}/oapi/game/end`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    game_start_id: parseInt(operationId)
+                }),
+                mode: 'cors',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`结束游戏失败: ${response.status} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log('游戏结束响应:', result);
+            
+            if (result.code === 0) {
+                // 清除本地存储的operation_id
+                localStorage.removeItem('floppy_bird_operation_id');
+                console.log('游戏会话已结束');
+            } else {
+                throw new Error(result.msg || '结束游戏失败');
+            }
+        } catch (error) {
+            console.error('结束游戏会话失败:', error);
+            // 即使失败也清除本地存储，避免重复调用
+            localStorage.removeItem('floppy_bird_operation_id');
+        }
+    }
+
     // 退出登录
     logout() {
         this.clearAuth();

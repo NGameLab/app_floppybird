@@ -97,6 +97,32 @@ window.showSplash = showSplash;
 
 function startGame()
 {
+   // 先调用游戏开始API，成功后才开始游戏
+   if (typeof auth !== 'undefined' && auth.startGameSession) {
+      auth.startGameSession().then(() => {
+         console.log('游戏开始API调用成功');
+         // API调用成功，开始游戏
+         startGameInternal();
+      }).catch(error => {
+         console.error('游戏开始API调用失败:', error);
+         // 显示错误提示给用户
+         if (typeof showError === 'function') {
+            showError('游戏启动失败', error.message || '无法连接到游戏服务器，请稍后重试');
+         } else {
+            alert('游戏启动失败: ' + (error.message || '无法连接到游戏服务器，请稍后重试'));
+         }
+         
+         // 阻止游戏开始，回到开始界面
+         showSplash();
+      });
+   } else {
+      // 没有API调用，直接开始游戏（开发模式或未登录状态）
+      startGameInternal();
+   }
+}
+
+function startGameInternal()
+{
    currentstate = states.GameScreen;
 
    //fade out the splash
@@ -342,6 +368,14 @@ function playerDead()
    clearInterval(loopPipeloop);
    loopGameloop = null;
    loopPipeloop = null;
+
+   // 调用游戏结束API
+   if (typeof auth !== 'undefined' && auth.endGameSession) {
+      auth.endGameSession().catch(error => {
+         console.error('游戏结束API调用失败:', error);
+         // 即使API调用失败，游戏仍然可以继续
+      });
+   }
 
    //mobile browsers don't support buzz bindOnce event
    if(isIncompatible.any())
