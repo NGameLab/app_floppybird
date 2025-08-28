@@ -1,9 +1,20 @@
 import { defineConfig } from 'vite'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig(({ command }) => {
   const isDev = command === 'serve'
   
   return {
+    plugins: [
+      // 将未被打包引用的静态资源直接复制到 dist
+      viteStaticCopy({
+        targets: [
+          { src: 'assets/**/*', dest: 'assets' },
+          { src: 'css/**/*', dest: 'css' },
+          { src: 'js/**/*', dest: 'js' },
+        ]
+      })
+    ],
     server: {
       port: 3000,
       open: true,

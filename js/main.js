@@ -305,7 +305,7 @@ function setBigScore(erase)
 
    var digits = score.toString().split('');
    for(var i = 0; i < digits.length; i++)
-      elemscore.append("<img src='/assets/font_big_" + digits[i] + ".png' alt='" + digits[i] + "'>");
+      elemscore.append("<img src='assets/font_big_" + digits[i] + ".png' alt='" + digits[i] + "'>");
 }
 
 function setSmallScore()
@@ -315,7 +315,7 @@ function setSmallScore()
 
    var digits = score.toString().split('');
    for(var i = 0; i < digits.length; i++)
-      elemscore.append("<img src='/assets/font_small_" + digits[i] + ".png' alt='" + digits[i] + "'>");
+      elemscore.append("<img src='assets/font_small_" + digits[i] + ".png' alt='" + digits[i] + "'>");
 }
 
 function setHighScore()

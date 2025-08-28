@@ -2,6 +2,10 @@
 <html lang="en">
    <head>
       <title>Floppy Bird</title>
+      <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+      <meta http-equiv="Pragma" content="no-cache" />
+      <meta http-equiv="Expires" content="0" />
+      <base href="/" />
       <meta http-equiv="content-type" content="text/html; charset=utf-8" />
       <meta name="author" content="Nebez Briefkani" />
       <meta name="description" content="play floppy bird. a remake of popular game flappy bird built in html/css/js" />
@@ -17,9 +21,9 @@
       <meta property="og:site_name" content="Floppy Bird" />
 
       <!-- Style sheets -->
-      <link href="css/reset.css" rel="stylesheet">
-      <link href="css/main.css" rel="stylesheet">
-      <link href="css/login.css" rel="stylesheet">
+      <link href="css/reset.css?v=20250829" rel="stylesheet">
+      <link href="css/main.css?v=20250829" rel="stylesheet">
+      <link href="css/login.css?v=20250829" rel="stylesheet">
    </head>
    <body>
       <div id="gamecontainer">
@@ -56,12 +60,13 @@
       <div class="boundingbox" id="pipebox"></div>
 
       <!-- 第三方库 -->
-      <script src="/js/jquery.min.js?v=20240827"></script>
-      <script src="/js/jquery.transit.min.js?v=20240827"></script>
-      <script src="/js/buzz.min.js?v=20240827"></script>
+      <script>window.__VER__='20250829';</script>
+      <script src="/js/jquery.min.js?v=20250829"></script>
+      <script src="/js/jquery.transit.min.js?v=20250829"></script>
+      <script src="/js/buzz.min.js?v=20250829"></script>
       
       <!-- 自定义模块 -->
-      <script type="module" src="/src/main.js"></script>
+      <script type="module" src="/src/main.js?v=20250829"></script>
 
       <script>
       function inIframe() {
