@@ -389,12 +389,24 @@ function playerDead()
    }
    else
    {
-      //play the hit sound (then the dead sound) and then show score
-      soundHit.play().bindOnce("ended", function() {
-         soundDie.play().bindOnce("ended", function() {
-            showScore();
+      // 播放音效；若因浏览器自动播放策略失败，保证兜底显示得分
+      var fallback = setTimeout(function(){ showScore(); }, 700);
+      try {
+         soundHit.play().bindOnce("ended", function() {
+            try {
+               soundDie.play().bindOnce("ended", function() {
+                  clearTimeout(fallback);
+                  showScore();
+               });
+            } catch(e2) {
+               clearTimeout(fallback);
+               showScore();
+            }
          });
-      });
+      } catch(e1) {
+         clearTimeout(fallback);
+         showScore();
+      }
    }
 }
 
@@ -471,6 +483,11 @@ $("#replay").click(function() {
          showSplash();
       } catch(e) { showSplash(); }
    });
+});
+
+// 记分板任意处可点击重玩（避免用户找不到图标）
+$("#scoreboard").on('click', function(){
+   if(replayclickable) $("#replay").click();
 });
 
 function playerScore()
