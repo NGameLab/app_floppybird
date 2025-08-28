@@ -97,26 +97,30 @@ window.showSplash = showSplash;
 
 function startGame()
 {
-   // 先调用游戏开始API，成功后才开始游戏
-   if (typeof auth !== 'undefined' && auth.startGameSession) {
-      auth.startGameSession().then(() => {
-         console.log('游戏开始API调用成功');
-         // API调用成功，开始游戏
-         startGameInternal();
-      }).catch(error => {
-         console.error('游戏开始API调用失败:', error);
-         // 显示错误提示给用户
-         if (typeof showError === 'function') {
-            showError('游戏启动失败', error.message || '无法连接到游戏服务器，请稍后重试');
-         } else {
-            alert('游戏启动失败: ' + (error.message || '无法连接到游戏服务器，请稍后重试'));
+   // 如果未登录或登录浮层存在，则不启动游戏，交给登录流程处理
+   try {
+      if (!auth || !auth.isLoggedIn || !auth.isLoggedIn() || document.getElementById('loginOverlay')) {
+         if (auth && auth.showLoginModal && !document.getElementById('loginOverlay')) {
+            auth.showLoginModal();
          }
-         
-         // 阻止游戏开始，回到开始界面
-         showSplash();
-      });
+         return;
+      }
+   } catch(e) { /* ignore guard errors */ }
+
+   // 新流程：init session → start
+   if (typeof auth !== 'undefined' && auth.startGame) {
+      (async ()=>{
+         try {
+            if (auth.initGameSession) await auth.initGameSession();
+            await auth.startGame();
+            startGameInternal();
+         } catch (error) {
+            // 静默失败，不弹窗，保持在开始界面
+            console.error('游戏开始流程失败:', error);
+            showSplash();
+         }
+      })();
    } else {
-      // 没有API调用，直接开始游戏（开发模式或未登录状态）
       startGameInternal();
    }
 }
@@ -301,7 +305,7 @@ function setBigScore(erase)
 
    var digits = score.toString().split('');
    for(var i = 0; i < digits.length; i++)
-      elemscore.append("<img src='assets/font_big_" + digits[i] + ".png' alt='" + digits[i] + "'>");
+      elemscore.append("<img src='/assets/font_big_" + digits[i] + ".png' alt='" + digits[i] + "'>");
 }
 
 function setSmallScore()
@@ -311,7 +315,7 @@ function setSmallScore()
 
    var digits = score.toString().split('');
    for(var i = 0; i < digits.length; i++)
-      elemscore.append("<img src='assets/font_small_" + digits[i] + ".png' alt='" + digits[i] + "'>");
+      elemscore.append("<img src='/assets/font_small_" + digits[i] + ".png' alt='" + digits[i] + "'>");
 }
 
 function setHighScore()
@@ -369,9 +373,9 @@ function playerDead()
    loopGameloop = null;
    loopPipeloop = null;
 
-   // 调用游戏结束API
-   if (typeof auth !== 'undefined' && auth.endGameSession) {
-      auth.endGameSession().catch(error => {
+   // 调用游戏结束API（带分数）
+   if (typeof auth !== 'undefined' && auth.endGame) {
+      auth.endGame(score).catch(error => {
          console.error('游戏结束API调用失败:', error);
          // 即使API调用失败，游戏仍然可以继续
       });
@@ -456,8 +460,16 @@ $("#replay").click(function() {
       //when that's done, display us back to nothing
       $("#scoreboard").css("display", "none");
 
-      //start the game over!
-      showSplash();
+      //start the game over without reload
+      try {
+         // 清理上轮分数与状态
+         score = 0; velocity = 0; position = 180; rotation = 0; pipes = new Array();
+         $(".pipe").remove();
+         $(".animated").css('animation-play-state', 'running');
+         $(".animated").css('-webkit-animation-play-state', 'running');
+         // 回到起始界面
+         showSplash();
+      } catch(e) { showSplash(); }
    });
 });
 
