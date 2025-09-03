@@ -37,6 +37,12 @@ buzz.all().setVolume(volume);
 var loopGameloop;
 var loopPipeloop;
 
+// 确保所有游戏变量都已定义
+console.log('游戏变量初始化完成:', {
+    debugmode, states, currentstate, gravity, velocity, position, rotation, jump,
+    flyArea, score, highscore, pipeheight, pipewidth, pipes, replayclickable
+});
+
 // 初始化代码已移到game-module.js中
 
 function getCookie(cname)

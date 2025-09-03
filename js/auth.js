@@ -349,7 +349,7 @@ export class NPlatformAuth {
 
             const payload = {
                 session_id: sessionId,
-                play_setting_code: "100consume",
+                play_setting_code: "0consume",
                 external_id: `floppy_bird_${Date.now()}`,
                 remark: 'Floppy Bird game started'
             };
@@ -369,8 +369,15 @@ export class NPlatformAuth {
             console.log('游戏开始响应:', result);
             if (result.code !== 0 || !result.data) throw new Error(result.msg || '开始游戏失败');
 
-            const startId = result.data.operation_id || result.data.game_start_id || `${Date.now()}`;
+            // 修复：验证 operation_id 的有效性，避免存储无效ID
+            const startId = result.data.operation_id || result.data.game_start_id;
+            if (!startId || startId === 0 || startId === '0') {
+                console.error('游戏开始API返回的operation_id无效:', startId);
+                throw new Error('游戏开始API返回的operation_id无效，请重试');
+            }
+            
             localStorage.setItem('floppy_bird_game_start_id', String(startId));
+            console.log('游戏开始成功，存储gameStartId:', startId);
             return startId;
         } catch (error) {
             console.error('startGame error:', error);
@@ -393,7 +400,22 @@ export class NPlatformAuth {
 
             const sessionId = localStorage.getItem('floppy_bird_session_id');
             const gameStartId = localStorage.getItem('floppy_bird_game_start_id');
-            if (!sessionId || !gameStartId) { console.warn('缺少会话或开始ID，跳过结束调用'); return; }
+            
+            // 修复：增强验证，确保 gameStartId 有效
+            if (!sessionId || !gameStartId || gameStartId === '0' || gameStartId === 'undefined' || gameStartId === 'null') { 
+                console.warn('缺少会话或开始ID，跳过结束调用', { sessionId, gameStartId }); 
+                return; 
+            }
+
+            // 额外验证：确保 operation_id 是有效的数字
+            const operationId = parseInt(gameStartId);
+            if (isNaN(operationId) || operationId <= 0) {
+                console.error('无效的operation_id:', gameStartId, '解析后:', operationId);
+                localStorage.removeItem('floppy_bird_game_start_id');
+                return;
+            }
+
+            console.log('调用游戏结束API:', { sessionId, score, operationId });
 
             const response = await fetch(`${this.apiBase}/oapi/game/end`, {
                 method: 'POST',
@@ -404,7 +426,7 @@ export class NPlatformAuth {
                 body: JSON.stringify({
                     session_id: sessionId,
                     score: Math.max(0, parseInt(score || 0)),
-                    operation_id: parseInt(gameStartId)
+                    operation_id: operationId
                 }),
                 mode: 'cors',
                 credentials: 'include'
@@ -458,6 +480,34 @@ export class NPlatformAuth {
     // 检查是否已登录
     isLoggedIn() {
         return this.accessToken !== null && this.userInfo !== null;
+    }
+
+    // 初始化游戏，添加重试机制
+    async initializeGameWithRetry() {
+        let retryCount = 0;
+        const maxRetries = 3;
+        const retryDelay = 1000; // 每次重试之间的延迟（毫秒）
+
+        while (retryCount < maxRetries) {
+            try {
+                if (typeof initGame === 'function') {
+                    console.log('OAuth 认证完成，开始初始化游戏...');
+                    initGame();
+                    console.log('游戏初始化成功！');
+                    break; // 成功则退出循环
+                } else {
+                    throw new Error('initGame 函数未找到');
+                }
+            } catch (error) {
+                console.error(`游戏初始化失败，尝试第 ${retryCount + 1} 次...`, error);
+                retryCount++;
+                if (retryCount === maxRetries) {
+                    console.error('游戏初始化失败，已达到最大重试次数');
+                    break;
+                }
+                await new Promise(resolve => setTimeout(resolve, retryDelay)); // 等待一段时间后重试
+            }
+        }
     }
 }
 
