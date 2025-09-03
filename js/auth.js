@@ -349,6 +349,7 @@ export class NPlatformAuth {
 
             const payload = {
                 session_id: sessionId,
+                play_setting_code: "100consume",
                 external_id: `floppy_bird_${Date.now()}`,
                 remark: 'Floppy Bird game started'
             };
@@ -368,7 +369,7 @@ export class NPlatformAuth {
             console.log('游戏开始响应:', result);
             if (result.code !== 0 || !result.data) throw new Error(result.msg || '开始游戏失败');
 
-            const startId = result.data.game_start_id || result.data.operation_id || `${Date.now()}`;
+            const startId = result.data.operation_id || result.data.game_start_id || `${Date.now()}`;
             localStorage.setItem('floppy_bird_game_start_id', String(startId));
             return startId;
         } catch (error) {
@@ -378,7 +379,7 @@ export class NPlatformAuth {
         }
     }
 
-    // 结束游戏：/oapi/game/end 需传 GameEndReq（session_id, score, game_start_id）
+    // 结束游戏：/oapi/game/end 需传 GameEndReq（session_id, score, operation_id）
     async endGame(score) {
         try {
             // 开发模式下跳过API调用
@@ -403,7 +404,7 @@ export class NPlatformAuth {
                 body: JSON.stringify({
                     session_id: sessionId,
                     score: Math.max(0, parseInt(score || 0)),
-                    game_start_id: parseInt(gameStartId)
+                    operation_id: parseInt(gameStartId)
                 }),
                 mode: 'cors',
                 credentials: 'include'

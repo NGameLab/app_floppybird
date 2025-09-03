@@ -2,10 +2,7 @@
 <html lang="en">
    <head>
       <title>Floppy Bird</title>
-      <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-      <meta http-equiv="Pragma" content="no-cache" />
-      <meta http-equiv="Expires" content="0" />
-      <base href="/" />
+      <!-- 移除禁用缓存的meta标签，让浏览器和服务器缓存策略一致 -->
       <meta http-equiv="content-type" content="text/html; charset=utf-8" />
       <meta name="author" content="Nebez Briefkani" />
       <meta name="description" content="play floppy bird. a remake of popular game flappy bird built in html/css/js" />
@@ -20,10 +17,7 @@
       <meta property="og:url" content="https://nebezb.com/floppybird/" />
       <meta property="og:site_name" content="Floppy Bird" />
 
-      <!-- Style sheets -->
-      <link href="css/reset.css?v=20250829" rel="stylesheet">
-      <link href="css/main.css?v=20250829" rel="stylesheet">
-      <link href="css/login.css?v=20250829" rel="stylesheet">
+      <!-- 样式交由 Vite 通过 src/main.js 导入处理 -->
    </head>
    <body>
       <div id="gamecontainer">
@@ -42,7 +36,7 @@
                      <div id="medal"></div>
                      <div id="currentscore"></div>
                      <div id="highscore"></div>
-                     <div id="replay"><img src="/assets/replay.png" alt="replay"></div>
+                     <div id="replay"><img src="./assets/replay.png" alt="replay"></div>
                   </div>
 
                   <!-- Pipes go here! -->
@@ -51,22 +45,22 @@
             <div id="land" class="animated"><div id="debug"></div></div>
          </div>
       </div>
-      <div id="footer">
+      <!-- <div id="footer">
          <a href="https://www.dotgears.com/">original game/concept/art by dong nguyen</a>
          <a href="https://nebezb.com/">recreated by nebez briefkani</a>
          <a href="https://github.com/nebez/floppybird/">view github project</a>
-      </div>
+      </div> -->
       <div class="boundingbox" id="playerbox"></div>
       <div class="boundingbox" id="pipebox"></div>
 
       <!-- 第三方库 -->
-      <script>window.__VER__='20250829';</script>
-      <script src="/js/jquery.min.js?v=20250829"></script>
-      <script src="/js/jquery.transit.min.js?v=20250829"></script>
-      <script src="/js/buzz.min.js?v=20250829"></script>
+      <script>window.__VER__=Date.now();</script>
+      <script src="./js/jquery.min.js"></script>
+      <script src="./js/jquery.transit.min.js"></script>
+      <script src="./js/buzz.min.js"></script>
       
       <!-- 自定义模块 -->
-      <script type="module" src="/src/main.js?v=20250829"></script>
+      <script type="module" src="./src/main.js"></script>
 
       <script>
       function inIframe() {
