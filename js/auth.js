@@ -27,15 +27,25 @@ export class NPlatformAuth {
         console.log('SSO地址:', this.ssoBase);
         console.log('API地址:', this.apiBase);
         
-        // 检查URL参数中是否有授权码
+        // 检查URL参数中是否有授权码或错误
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const state = urlParams.get('state');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
         
-        if (code) {
+        if (error) {
+            console.error('OAuth授权错误:', error, errorDescription);
+            showError(`授权失败: ${errorDescription || error}`, '授权失败');
+            this.clearUrlParams();
+            this.showLoginModal();
+        } else if (code) {
             console.log('检测到授权码:', code);
             console.log('状态参数:', state);
             console.log('开始处理OAuth回调...');
+            
+            // 立即清除URL中的code参数，避免重复使用
+            this.clearUrlParams();
             
             // 延迟处理，确保页面完全加载
             setTimeout(() => {
@@ -171,17 +181,16 @@ export class NPlatformAuth {
             const tokenResponse = await this.getAccessToken(code, state);
             
             if (tokenResponse.access_token) {
+                // 立即存储token，避免重复请求
                 this.accessToken = tokenResponse.access_token;
                 localStorage.setItem('n_platform_token', this.accessToken);
+                console.log('Token已存储到localStorage');
                 
                 // 获取用户信息
                 await this.getUserInfo();
                 
                 // 隐藏登录模态框，显示游戏
                 this.hideLoginModal();
-                
-                // 清除URL中的参数
-                window.history.replaceState({}, document.title, window.location.pathname);
                 
                 // 显示成功消息
                 showSuccess('登录成功！欢迎回来', '登录成功');
@@ -212,16 +221,17 @@ export class NPlatformAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
                 },
                 body: new URLSearchParams({
                     grant_type: 'authorization_code',
+                    client_id: this.clientId,
                     code: code,
-                    state: state,
                     redirect_uri: this.redirectUri
                 }),
-                // 添加CORS配置
+                // 不带cookie，避免CORS问题
                 mode: 'cors',
-                credentials: 'include'
+                credentials: 'omit'
             });
 
             console.log('Token响应状态:', response.status);
@@ -230,6 +240,10 @@ export class NPlatformAuth {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Token请求失败:', errorText);
+                // 401/403错误直接抛出，不重定向
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error(`认证失败: ${response.status} - ${errorText}`);
+                }
                 throw new Error(`Token请求失败: ${response.status} - ${errorText}`);
             }
 
@@ -257,11 +271,12 @@ export class NPlatformAuth {
             
             const response = await fetch(`${this.apiBase}/oapi/me`, {
                 headers: {
-                    'Authorization': `Bearer ${this.accessToken}`
+                    'Authorization': `Bearer ${this.accessToken}`,
+                    'Accept': 'application/json',
                 },
-                // 添加CORS配置
+                // 不带cookie，避免CORS问题
                 mode: 'cors',
-                credentials: 'include'
+                credentials: 'omit'
             });
 
             console.log('用户信息响应状态:', response.status);
@@ -270,6 +285,10 @@ export class NPlatformAuth {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('获取用户信息失败:', errorText);
+                // 401/403错误直接抛出，不重定向
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error(`认证失败: ${response.status} - ${errorText}`);
+                }
                 throw new Error(`获取用户信息失败: ${response.status} - ${errorText}`);
             }
 
@@ -319,9 +338,12 @@ export class NPlatformAuth {
 
             const res = await fetch(`${this.apiBase}/oapi/game/session/init`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${this.accessToken}` },
+                headers: { 
+                    'Authorization': `Bearer ${this.accessToken}`,
+                    'Accept': 'application/json',
+                },
                 mode: 'cors',
-                credentials: 'include'
+                credentials: 'omit'
             });
             if (!res.ok) throw new Error(`会话初始化失败: ${res.status}`);
             const body = await res.json();
@@ -358,11 +380,12 @@ export class NPlatformAuth {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                 },
                 body: JSON.stringify(payload),
                 mode: 'cors',
-                credentials: 'include'
+                credentials: 'omit'
             });
             if (!response.ok) throw new Error(`开始游戏失败: ${response.status}`);
             const result = await response.json();
@@ -421,7 +444,8 @@ export class NPlatformAuth {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                 },
                 body: JSON.stringify({
                     session_id: sessionId,
@@ -429,7 +453,7 @@ export class NPlatformAuth {
                     operation_id: operationId
                 }),
                 mode: 'cors',
-                credentials: 'include'
+                credentials: 'omit'
             });
 
             if (!response.ok) {
@@ -470,6 +494,19 @@ export class NPlatformAuth {
     generateState() {
         return Math.random().toString(36).substring(2, 15) + 
                Math.random().toString(36).substring(2, 15);
+    }
+
+    // 清除URL中的OAuth参数
+    clearUrlParams() {
+        const url = new URL(window.location);
+        url.searchParams.delete('code');
+        url.searchParams.delete('state');
+        url.searchParams.delete('error');
+        url.searchParams.delete('error_description');
+        
+        // 使用replaceState避免在浏览器历史中留下带有敏感参数的URL
+        window.history.replaceState({}, document.title, url.toString());
+        console.log('已清除URL中的OAuth参数');
     }
 
     // 获取当前用户信息

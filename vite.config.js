@@ -21,12 +21,22 @@ export default defineConfig(({ command }) => {
       // 添加开发服务器缓存控制
       headers: {
         'Cache-Control': 'no-cache',
+        // 添加CORS头
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization, X-Requested-With',
       },
       proxy: {
         '/api': {
           target: 'http://localhost:18080',
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '')
+          rewrite: (path) => path.replace(/^\/api/, ''),
+          configure: (proxy, options) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              // 添加CORS头到代理请求
+              proxyReq.setHeader('Origin', req.headers.origin || 'http://localhost:3000');
+            });
+          }
         }
       }
     },
